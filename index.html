@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photo Upload</title>
+   </head>
+<body>
+
+        <h1>Upload a Photo</h1>
+        <h3>framework for sending&receving photos for ai canvas</h3>
+        <input type="file" id="photoUpload" accept="image/*" />
+        <button id="uploadButton">Upload to Firebase</button>
+        <button id="loadGalleryButton">Load Gallery</button>
+        <div id="gallery"></div>
+    
+        <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-analytics.js";
+        import { getStorage, ref, listAll, getDownloadURL, getMetadata, uploadBytesResumable } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-storage.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxG7s_Wg6RAC4AQ5ZpkCgt0XcnSqcwt-A",
+            authDomain: "nyucapstone-7c22c.firebaseapp.com",
+            projectId: "nyucapstone-7c22c",
+            storageBucket: "nyucapstone-7c22c.appspot.com",
+            messagingSenderId: "658619789110",
+            appId: "1:658619789110:web:4eb43edacd4bbfcca74d97",
+            measurementId: "G-NCNE4TC0GC"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const storage = getStorage(app);
+
+        // Get the load gallery button and gallery container elements
+        const loadGalleryButton = document.getElementById('loadGalleryButton');
+        const gallery = document.getElementById('gallery');
+
+
+            // Handle the upload button click event
+    uploadButton.addEventListener('click', () => {
+        // Get the selected file
+        const file = photoUpload.files[0];
+        if (!file) {
+            alert('No file selected');
+            return;
+        }
+
+        // Generate random x and y values
+        const randomX = Math.floor(Math.random() * 1000);
+        const randomY = Math.floor(Math.random() * 1000);
+
+        // Define custom metadata with random x and y values
+        const metadata = {
+            customMetadata: {
+                'x': randomX.toString(),
+                'y': randomY.toString()
+            }
+        };
+
+        // Create a reference to the file in Firebase Storage
+        const storageRef = ref(storage, 'uploads/' + file.name);
+
+        // Upload the file to Firebase Storage with custom metadata
+        const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+
+        // Handle successful uploads
+        uploadTask.on('state_changed', null, null, () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                console.log('File available at', downloadURL);
+            });
+        }, (error) => {  // Handle upload errors
+            console.error('File upload failed:', error);
+        });
+    });
+
+        // Handle the load gallery button click event
+        loadGalleryButton.addEventListener('click', () => {
+            // Clear the gallery container
+            gallery.innerHTML = '';
+
+            // Create a reference to the "uploads" folder in Firebase Storage
+            const storageRef = ref(storage, 'uploads');
+
+            // List all files in the "uploads" folder
+            listAll(storageRef).then((res) => {
+                res.items.forEach((itemRef) => {
+                    // Get the download URL for each file
+                    getDownloadURL(itemRef).then((url) => {
+                        // Get the metadata for each file
+                        getMetadata(itemRef).then((metadata) => {
+                            // Extract the x and y values from the metadata
+                            const x = metadata.customMetadata.x;
+                            const y = metadata.customMetadata.y;
+
+                            // Create an image element and set its source to the download URL
+                            const img = document.createElement('img');
+                            img.src = url;
+                            img.style.width = '100px';
+                            img.style.margin = '10px';
+
+                            // Create a label element to display the x and y values
+                            const label = document.createElement('p');
+                            label.textContent = `x: ${x}, y: ${y}`;
+
+                            // Create a container for the image and label
+                        const container = document.createElement('div');
+                        container.appendChild(img);
+                        container.appendChild(label);
+
+                        // Append the container to the gallery
+                        gallery.appendChild(container);
+                    });
+                });
+            });
+                 }).catch((error) => {
+            console.error('Failed to load gallery:', error);
+        });
+    });
+</script>
+
+
+</body>
+</html>
